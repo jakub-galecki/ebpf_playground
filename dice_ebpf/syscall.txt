@@ -1,0 +1,6 @@
+7817  accept4(3,  <unfinished ...>
+7808  <... nanosleep resumed>NULL)      = 0
+7817  <... accept4 resumed>0x400005ed9c, [112], 0) = -1 EAGAIN (Resource temporarily unavailable)
+7813  <... read resumed>"\n\3SET\22\4kuba\22\00210", 16384) = 15
+... 
+7813  write(7, "\"\2OK", 4 <unfinished ...>
