@@ -75,6 +75,7 @@ dkms.conf
 # Executables
 
 ### VisualStudioCode ###
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -96,3 +97,5 @@ dkms.conf
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,c++,c
 
 dice/
+redis_ebpf_go/
+*.strace
