@@ -33,44 +33,62 @@ prog = """
 struct data_t {
     u32 pid;
     u64 ts;
-    char comm[TASK_COMM_LEN];
     char buf[BUF_LEN];
-    int buf_len;
 };
 
-//PF_PERF_OUTPUT(events);
+//BPF_PERF_OUTPUT(events);
 
-
-int syscall__read(struct pt_regs *ctx, int fd, const char __user *buf, size_t count) {
+int syscall__read(struct pt_regs *ctx, unsigned int fd, char *buf, size_t count) {
     struct data_t data = {};
+     
     u64 pid_tgid = bpf_get_current_pid_tgid();
     data.pid = pid_tgid >> 32;
 
-    
-    char comm[TASK_COMM_LEN];
+    if (data.pid != 141002) {
+        return 0;
+    }
+
     data.ts = bpf_ktime_get_ns();
-    bpf_probe_read_user_str(&data.comm, sizeof(data.comm), comm);
 
-    bpf_probe_read_user_str(&data.buf, sizeof(data.buf), buf);
+    int i = 0;
+    for (i = 0; i < BUF_LEN; i++) {
+        if (buf[i] == '\\0') {
+            break;
+        }
 
+        data.buf[i] = buf[i];
+    }
+
+    data.buf[i] = '\\0';
+
+    // bpf_probe_read_user(&data.buf, sizeof(data.buf), buf);
   //  events.perf_submit(ctx, &data, sizeof(data));
-    bpf_trace_printk("READ_SYSCALL: fd: <%d>, comm: <%s>\\n", fd, data.comm);
+
+    bpf_trace_printk("buf: %s \\n", data.buf);
+  
     return 0;
 }
 """
 
 b = BPF(text=prog)
-b.attach_kprobe(event=b.get_syscall_fnname("read"), fn_name="syscall__read")
+fname = b.get_syscall_fnname("read")  # __x64_sys_read
+print(fname)
+b.attach_kprobe(event=fname, fn_name="syscall__read")
 # b.attach_kprobe(event=b.get_syscall_fnname("write"), fn_name="hello_world")
 
 # def print_event(cpu, data, size):
 #     event = b["events"].event(data)
-#     print(f"PID: {event.pid}, Comm: {event.comm.decode('utf-8')}, Buffer: {event.buf[:event.buf_len].decode('utf-8', errors='replace')}")
+#     if event.pid != 141002:
+#         return
+#     print(f"PID: {event.pid}, Buffer: {event.buf[:]}")
 
 # b["events"].open_perf_buffer(print_event)
-while True:
+while 1:
     try:
         (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+    except ValueError:
+        continue
     except KeyboardInterrupt:
         exit()
     print(msg)
+
