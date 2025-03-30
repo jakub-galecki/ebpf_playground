@@ -49,6 +49,10 @@ int syscall__read(struct pt_regs *ctx, unsigned int fd, char *buf, size_t count)
     }
 
     data.ts = bpf_ktime_get_ns();
+    
+
+    // buf is a place where data will be stroed 
+    // at this point is empty 
 
     int i = 0;
     for (i = 0; i < BUF_LEN; i++) {
