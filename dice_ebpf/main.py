@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 from bcc import BPF
 from bcc.utils import printb
-import sys 
-
+import sys
 
 class bcolors:
     HEADER = '\033[95m'
