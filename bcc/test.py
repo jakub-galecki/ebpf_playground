@@ -6,6 +6,9 @@ from bcc.utils import printb
 with open("hash_map.c", "r") as f:
     bpf_program = f.read()
 
+
+# __user - indicates that pointer is in the userspace
+
 # Loading the eBPF program
 b = BPF(text=bpf_program)
 b.attach_kprobe(event=b.get_syscall_fnname("execve"), fn_name="set_timestamp")

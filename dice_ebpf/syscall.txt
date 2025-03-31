@@ -4,3 +4,45 @@
 7813  <... read resumed>"\n\3SET\22\4kuba\22\00210", 16384) = 15
 ... 
 7813  write(7, "\"\2OK", 4 <unfinished ...>
+
+
+TRACEPOINTS 
+
+root@fedora:/sys/kernel/debug/tracing/events/syscalls# ls | grep read
+sys_enter_read
+sys_exit_read
+
+[root@fedora sys_enter_read]# cat format 
+name: sys_enter_read
+ID: 802
+format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+
+	field:int __syscall_nr;	offset:8;	size:4;	signed:1;
+	field:unsigned int fd;	offset:16;	size:8;	signed:0;
+	field:char * buf;	offset:24;	size:8;	signed:0;
+	field:size_t count;	offset:32;	size:8;	signed:0;
+
+print fmt: "fd: 0x%08lx, buf: 0x%08lx, count: 0x%08lx", ((unsigned long)(REC->fd)), ((unsigned long)(REC->buf)), ((unsigned long)(REC->count))
+
+
+[root@fedora sys_exit_read]# cat format 
+name: sys_exit_read
+ID: 801
+format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+
+	field:int __syscall_nr;	offset:8;	size:4;	signed:1;
+	field:long ret;	offset:16;	size:8;	signed:1;
+
+print fmt: "0x%lx", REC->ret
+
+
+# fname = b.get_syscall_fnname("read")  # __x64_sys_read
+# b.attach_kprobe(event=b.get_syscall_fnname("write"), fn_name="hello_world")
