@@ -124,6 +124,8 @@ int exit_read(struct read_exit_args *args) {
         bpf_ringbuf_discard(com, 0);
         return 1;
     }
+    // this can be used to track duration, but is useless to track timestamp
+    // as CLOCK_MONOTONIC is used.
     com->ts = bpf_ktime_get_ns();
     com->len = n;
     bpf_ringbuf_submit(com, 0);

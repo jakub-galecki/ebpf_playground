@@ -101,3 +101,8 @@ redis_ebpf_go/
 *.strace
 
 .DS_Store
+.env
+go/.env
+go/influxdata-archive.key
+go/foo
+membench/
