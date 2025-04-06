@@ -9,13 +9,26 @@ import (
 	"os/signal"
 	"syscall"
 
+	"C"
+
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
 )
+import "unsafe"
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux  -type command bpf tracepoint.c -- -I../headers
+
+func toBytes(raw [256]int8) []byte {
+	dd := C.GoBytes((unsafe.Pointer)(&raw[0]), 256)
+	return dd
+}
+
+func toStr(raw [256]int8) string {
+	dd := C.GoString((*C.char)(&raw[0]))
+	return dd
+}
 
 func main() {
 	stopper := make(chan os.Signal, 1)
@@ -62,7 +75,6 @@ func main() {
 
 	var e bpfCommand
 	for {
-		log.Println("starting reading process")
 		record, err := rb.Read()
 		if err != nil {
 			if errors.Is(err, ringbuf.ErrClosed) {
@@ -76,6 +88,7 @@ func main() {
 			log.Printf("parsing ringbuf event: %s", err)
 			continue
 		}
-		log.Printf("ts: %d\tcomm: %v\n", e.Ts, e.Buf)
+		command := toBytes(e.Buf)
+		log.Printf("ts: %d, comm: %s", e.Ts, command)
 	}
 }
