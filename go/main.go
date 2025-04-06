@@ -33,6 +33,7 @@ type parsedEvent struct {
 	status  bool
 	latency uint64
 	size    int // always 256 - to fix
+	err     string
 }
 
 func parseEvent(e bpfOutputEvent) (*parsedEvent, bool) {
@@ -49,6 +50,9 @@ func parseEvent(e bpfOutputEvent) (*parsedEvent, bool) {
 	}
 	pe.size = len(payload)
 	pe.status = getStatus(string(status))
+	if !pe.status {
+		pe.err = string(status)
+	}
 	pe.latency = e.Latency
 	return pe, true
 }
@@ -162,7 +166,7 @@ func main() {
 		if !ok {
 			continue
 		}
-		log.Printf("op: %s, status: %v,  latency: %d", parsed.op, parsed.status, parsed.latency)
+		log.Printf("op: %s, status: %v,  latency: %d, err: %s", parsed.op, parsed.status, parsed.latency, parsed.err)
 		// using time.Now here leaves us with some delay, but should be somehow accurate.
 		err = wapi.WritePoint(context.Background(),
 			influxdb2.NewPointWithMeasurement("database").
