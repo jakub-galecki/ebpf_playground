@@ -5,6 +5,22 @@
 #include <bpf/bpf_core_read.h>
 #include <linux/sched.h>
 
+typedef unsigned char __u8;
+typedef short int __s16;
+typedef short unsigned int __u16;
+typedef int __s32;
+typedef unsigned int __u32;
+typedef long long int __s64;
+typedef long long unsigned int __u64;
+typedef __u8 u8;
+typedef __s16 s16;
+typedef __u16 u16;
+typedef __s32 s32;
+typedef __u32 u32;
+typedef __s64 s64;
+typedef __u64 u64;
+
+
 // logs in  /sys/kernel/debug/tracing/trace
 
 int i = 0;
@@ -18,17 +34,25 @@ struct command {
 };
 
 struct read_enter_args {
-	__u64 __unused__;
-	int __syscall_nr;	
-	unsigned int fd;
-    char *buf;	
-	unsigned int count;
+    u64 __do_not_use__;
+    int __syscall_nr;
+    char __pad_12;
+    char __pad_13;
+    char __pad_14;
+    char __pad_15;
+    u64 fd;
+    char * buf;
+    long count;
 };
 
 struct read_exit_args {
-	__u64 __unused__;
-	int __syscall_nr;	
-	long ret;
+    u64 __do_not_use__;
+    int __syscall_nr;
+    char __pad_12;
+    char __pad_13;
+    char __pad_14;
+    char __pad_15;
+    long ret;
 };
 
 // in go ebpf we can use global variable to store target pid

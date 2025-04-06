@@ -28,7 +28,6 @@ struct command {
     char buf[256];
 };
 
-
 // map of pids that read should be monitored
 struct  {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -36,7 +35,6 @@ struct  {
     __type(value, __u8);
     __uint(max_entries, 1);
 } target_pids SEC(".maps");
-
 
 
 struct  {
@@ -75,7 +73,6 @@ int enter_read(struct read_enter_args *args) {
     }
     return 0;
 }
-
 
 struct read_exit_args {
         u64 __do_not_use__;

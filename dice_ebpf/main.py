@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from bcc import BPF
+from bcc import BPF, DEBUG_PREPROCESSOR
 from bcc.utils import printb
 import sys
 import ctypes
@@ -34,7 +34,7 @@ def main():
     if DEBUG == 1: print(bcolors.OKCYAN + "Reading for pid: " + raw + bcolors.ENDC)
     with open("./include/trace.c", "r") as f:
         prog = f.read()
-    b = BPF(text=prog)
+    b = BPF(text=prog, debug=DEBUG_PREPROCESSOR)
     # b.attach_tracepoint(tp="syscalls:sys_enter_read", fn_name="enter_read")
     # b.attach_tracepoint(tp="syscalls:sys_exit_read", fn_name="exit_read")
     for i in raw.split(","):
