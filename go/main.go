@@ -15,7 +15,7 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux -type command bpf tracepoint.c -- -I../headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux  -type command bpf tracepoint.c -- -I../headers
 
 func main() {
 	stopper := make(chan os.Signal, 1)
@@ -43,7 +43,7 @@ func main() {
 	}
 	defer tpExit.Close()
 
-	if err = objs.TargetPids.Update(uint32(50212), uint8(1), ebpf.UpdateAny); err != nil {
+	if err = objs.TargetPids.Update(uint32(31818), uint8(1), ebpf.UpdateAny); err != nil {
 		panic(err)
 	}
 
