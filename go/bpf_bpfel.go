@@ -13,10 +13,19 @@ import (
 )
 
 type bpfCommand struct {
-	Ts  uint64
-	Len int32
-	Buf [256]int8
-	_   [4]byte
+	Len     int32
+	Buf     [256]int8
+	_       [4]byte
+	Ts      uint64
+	Latency uint64
+}
+
+type bpfOutputEvent struct {
+	Buf     [256]int8
+	Status  [64]int8
+	Len     int32
+	_       [4]byte
+	Latency uint64
 }
 
 // loadBpf returns the embedded CollectionSpec for bpf.
@@ -61,17 +70,21 @@ type bpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfProgramSpecs struct {
-	EnterRead *ebpf.ProgramSpec `ebpf:"enter_read"`
-	ExitRead  *ebpf.ProgramSpec `ebpf:"exit_read"`
+	EnterRead  *ebpf.ProgramSpec `ebpf:"enter_read"`
+	EnterWrite *ebpf.ProgramSpec `ebpf:"enter_write"`
+	ExitRead   *ebpf.ProgramSpec `ebpf:"exit_read"`
+	ExitWrite  *ebpf.ProgramSpec `ebpf:"exit_write"`
 }
 
 // bpfMapSpecs contains maps before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfMapSpecs struct {
-	Output     *ebpf.MapSpec `ebpf:"output"`
-	ReadBuffer *ebpf.MapSpec `ebpf:"read_buffer"`
-	TargetPids *ebpf.MapSpec `ebpf:"target_pids"`
+	Commands    *ebpf.MapSpec `ebpf:"commands"`
+	Output      *ebpf.MapSpec `ebpf:"output"`
+	ReadBuffer  *ebpf.MapSpec `ebpf:"read_buffer"`
+	TargetPids  *ebpf.MapSpec `ebpf:"target_pids"`
+	WriteBuffer *ebpf.MapSpec `ebpf:"write_buffer"`
 }
 
 // bpfVariableSpecs contains global variables before they are loaded into the kernel.
@@ -100,16 +113,20 @@ func (o *bpfObjects) Close() error {
 //
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfMaps struct {
-	Output     *ebpf.Map `ebpf:"output"`
-	ReadBuffer *ebpf.Map `ebpf:"read_buffer"`
-	TargetPids *ebpf.Map `ebpf:"target_pids"`
+	Commands    *ebpf.Map `ebpf:"commands"`
+	Output      *ebpf.Map `ebpf:"output"`
+	ReadBuffer  *ebpf.Map `ebpf:"read_buffer"`
+	TargetPids  *ebpf.Map `ebpf:"target_pids"`
+	WriteBuffer *ebpf.Map `ebpf:"write_buffer"`
 }
 
 func (m *bpfMaps) Close() error {
 	return _BpfClose(
+		m.Commands,
 		m.Output,
 		m.ReadBuffer,
 		m.TargetPids,
+		m.WriteBuffer,
 	)
 }
 
@@ -123,14 +140,18 @@ type bpfVariables struct {
 //
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfPrograms struct {
-	EnterRead *ebpf.Program `ebpf:"enter_read"`
-	ExitRead  *ebpf.Program `ebpf:"exit_read"`
+	EnterRead  *ebpf.Program `ebpf:"enter_read"`
+	EnterWrite *ebpf.Program `ebpf:"enter_write"`
+	ExitRead   *ebpf.Program `ebpf:"exit_read"`
+	ExitWrite  *ebpf.Program `ebpf:"exit_write"`
 }
 
 func (p *bpfPrograms) Close() error {
 	return _BpfClose(
 		p.EnterRead,
+		p.EnterWrite,
 		p.ExitRead,
+		p.ExitWrite,
 	)
 }
 

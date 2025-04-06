@@ -50,3 +50,7 @@ TRACEPOINT_PROBE(syscalls, sys_exit_read) {
     }
     return 0;  
 }
+
+
+TRACEPOINT_PROBE(syscalls, sys_enter_write) {}
+TRACEPOINT_PROBE(syscalls, sys_exit_write) {}

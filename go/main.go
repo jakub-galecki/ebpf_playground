@@ -24,29 +24,47 @@ import (
 
 import "unsafe"
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux  -type command bpf tracepoint.c -- -I../headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux  -type output_event bpf tracepoint.c -- -I../headers
 
-func toBytes(raw [256]int8) []byte {
-	dd := C.GoBytes((unsafe.Pointer)(&raw[0]), 256)
-	return dd
+type parsedEvent struct {
+	*bpfOutputEvent
+
+	op      string
+	status  bool
+	latency uint64
+	size    int // always 256 - to fix
 }
 
-func toStr(raw [256]int8) string {
-	dd := C.GoString((*C.char)(unsafe.Pointer(&raw[0])))
-	return dd
+func parseEvent(e bpfOutputEvent) (*parsedEvent, bool) {
+	pe := &parsedEvent{
+		bpfOutputEvent: &e,
+	}
+
+	payload := C.GoBytes((unsafe.Pointer)(&e.Buf[0]), 256)
+	status := C.GoBytes((unsafe.Pointer)(&e.Status[0]), 64)
+
+	pe.op = getOp(string(payload))
+	if pe.op == "" {
+		return pe, false
+	}
+	pe.size = len(payload)
+	pe.status = getStatus(string(status))
+	pe.latency = e.Latency
+	return pe, true
 }
 
-type parsedComm struct {
-	*bpfCommand
-
-	str string
+func getStatus(status string) bool {
+	if strings.Contains(status, "OK") {
+		return true
+	}
+	return false
 }
 
-func (c *parsedComm) getOp() string {
-	if strings.Contains(c.str, "SET") {
+func getOp(str string) string {
+	if strings.Contains(str, "SET") {
 		return "SET"
 	}
-	if strings.Contains(c.str, "GET") {
+	if strings.Contains(str, "GET") {
 		return "GET"
 	}
 	return ""
@@ -83,6 +101,18 @@ func main() {
 	}
 	defer tpExit.Close()
 
+	writeEnter, err := link.Tracepoint("syscalls", "sys_enter_write", objs.EnterWrite, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer writeEnter.Close()
+
+	writeExit, err := link.Tracepoint("syscalls", "sys_exit_write", objs.ExitWrite, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer writeExit.Close()
+
 	if err = objs.TargetPids.Update(uint32(22762), uint8(1), ebpf.UpdateAny); err != nil {
 		panic(err)
 	}
@@ -112,7 +142,7 @@ func main() {
 		}
 	}()
 
-	var e bpfCommand
+	var e bpfOutputEvent
 	for {
 		record, err := rb.Read()
 		if err != nil {
@@ -127,18 +157,20 @@ func main() {
 			log.Printf("parsing ringbuf event: %s", err)
 			continue
 		}
-		command := strings.TrimSpace(toStr(e.Buf))
-		if command == "" {
+
+		parsed, ok := parseEvent(e)
+		if !ok {
 			continue
 		}
-		parsed := &parsedComm{
-			bpfCommand: &e,
-			str:        command,
-		}
-		log.Printf("comm: %s", command)
+		log.Printf("op: %s, status: %v,  latency: %d", parsed.op, parsed.status, parsed.latency)
 		// using time.Now here leaves us with some delay, but should be somehow accurate.
 		err = wapi.WritePoint(context.Background(),
-			influxdb2.NewPointWithMeasurement("database").AddTag("type", "dice").AddField("operation", parsed.getOp()).SetTime(time.Now()))
+			influxdb2.NewPointWithMeasurement("database").
+				AddTag("type", "dice").
+				AddField("operation", parsed.op).
+				AddField("status", parsed.status).
+				AddField("latency", parsed.latency).
+				SetTime(time.Now()))
 		if err != nil {
 			log.Printf("writing point: %s", err)
 		}
