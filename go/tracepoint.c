@@ -34,7 +34,7 @@ struct command {
 
 struct output_event {
     char buf[256];
-    char status[64];
+    // char status[64];
     int len;
     u64 latency;
 };
@@ -216,19 +216,19 @@ int exit_write(struct write_exit_args *args) {
         return 1;
     }
 
-    int n = bpf_probe_read_user_str(out->status, sizeof(out->status), (void *)*buf_ptr);
-    if (n <= 0) {
-        if (n < 0) {
-            bpf_printk("[exit_write] reading buffer %p string failed %d, expected: %d\n", *buf_ptr, n, args->ret);
-        }
-        bpf_ringbuf_discard(out, 0);
-        bpf_map_delete_elem(&write_buffer, &pid);
-        return 1;
-    }
+    // int n = bpf_probe_read_user_str(out->status, sizeof(out->status), (void *)*buf_ptr);
+    // if (n <= 0) {
+    //     if (n < 0) {
+    //         bpf_printk("[exit_write] reading buffer %p string failed %d, expected: %d\n", *buf_ptr, n, args->ret);
+    //     }
+    //     bpf_ringbuf_discard(out, 0);
+    //     bpf_map_delete_elem(&write_buffer, &pid);
+    //     return 1;
+    // }
 
     com->latency = ts - com->ts;
 
-    n = bpf_probe_read(out->buf, sizeof(out->buf), (void*)com->buf);
+    int n = bpf_probe_read(out->buf, sizeof(out->buf), (void*)com->buf);
     if (n < 0) {
         bpf_map_delete_elem(&write_buffer, &pid);
         bpf_ringbuf_discard(out, 0);

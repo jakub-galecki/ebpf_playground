@@ -22,7 +22,6 @@ type bpfCommand struct {
 
 type bpfOutputEvent struct {
 	Buf     [256]int8
-	Status  [64]int8
 	Len     int32
 	_       [4]byte
 	Latency uint64

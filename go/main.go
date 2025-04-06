@@ -18,7 +18,7 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
-	"github.com/influxdata/influxdb-client-go/v2"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -42,27 +42,25 @@ func parseEvent(e bpfOutputEvent) (*parsedEvent, bool) {
 	}
 
 	payload := C.GoBytes((unsafe.Pointer)(&e.Buf[0]), 256)
-	status := C.GoBytes((unsafe.Pointer)(&e.Status[0]), 64)
+	// status := C.GoBytes((unsafe.Pointer)(&e.Status[0]), 64)
 
 	pe.op = getOp(string(payload))
 	if pe.op == "" {
 		return pe, false
 	}
 	pe.size = len(payload)
-	pe.status = getStatus(string(status))
-	if !pe.status {
-		pe.err = string(status)
-	}
+	// pe.status = getStatus(string(status))
+	// pe.err = string(status)
 	pe.latency = e.Latency
 	return pe, true
 }
 
-func getStatus(status string) bool {
-	if strings.Contains(status, "OK") {
-		return true
-	}
-	return false
-}
+// func getStatus(status string) bool {
+// 	if strings.Contains(status, "OK") {
+// 		return true
+// 	}
+// 	return false
+// }
 
 func getOp(str string) string {
 	if strings.Contains(str, "SET") {
@@ -117,7 +115,7 @@ func main() {
 	}
 	defer writeExit.Close()
 
-	if err = objs.TargetPids.Update(uint32(22762), uint8(1), ebpf.UpdateAny); err != nil {
+	if err = objs.TargetPids.Update(uint32(10238), uint8(1), ebpf.UpdateAny); err != nil {
 		panic(err)
 	}
 
@@ -166,7 +164,7 @@ func main() {
 		if !ok {
 			continue
 		}
-		log.Printf("op: %s, status: %v,  latency: %d, err: %s", parsed.op, parsed.status, parsed.latency, parsed.err)
+		log.Printf("op: %s,  latency: %d", parsed.op, parsed.latency)
 		// using time.Now here leaves us with some delay, but should be somehow accurate.
 		err = wapi.WritePoint(context.Background(),
 			influxdb2.NewPointWithMeasurement("database").
